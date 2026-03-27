@@ -1,0 +1,51 @@
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+export default async function handler(req, res) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Only POST requests allowed' });
+  }
+
+  try {
+    const { amount, name, phone } = req.body;
+
+    // Convert to pennies
+    const amountInCents = Math.round(parseFloat(amount) * 100);
+
+    // Create a Stripe Checkout Session specifically for P-4 Lawncare
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card', 'us_bank_account'], 
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'P-4 Lawncare Custom Payment',
+              description: `Client: ${name} | Phone: ${phone}`,
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      // You will update these to your actual P4 domain once it is live
+      success_url: 'https://p-4lawncare.com/?success=true', 
+      cancel_url: 'https://p-4lawncare.com/?canceled=true',
+    });
+
+    res.status(200).json({ url: session.url });
+    
+  } catch (error) {
+    console.error("Stripe Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
