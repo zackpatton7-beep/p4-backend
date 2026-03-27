@@ -1,0 +1,11 @@
+{
+  "name": "p4-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node api/payment.js"
+  },
+  "dependencies": {
+    "stripe": "^14.0.0",
+    "cors": "^2.8.5"
+  }
+}
